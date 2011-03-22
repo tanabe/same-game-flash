@@ -87,7 +87,7 @@ package {
       for each(var item:XML in event.result.items.item) {
         var userName:String = item.name;
         var score:uint = item.score;
-        rankingAsset["ranking" + count].userName.text = count + ". " + userName;
+        rankingAsset["ranking" + count].userName.text = (count + 1) + ". " + userName;
         rankingAsset["ranking" + count].score.text = score + " pt";
         count++;
       }
