@@ -50,6 +50,7 @@
      *  render
      */
     private function render():void {
+      visible = true;
 
       graphics.beginFill(0x000000, 0);
       graphics.drawRect(0, 0, WIDTH, HEIGHT);

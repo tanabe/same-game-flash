@@ -5,6 +5,7 @@ package {
   import flash.display.MovieClip;
   import flash.display.Sprite;
   import flash.geom.Point;
+  import flash.text.TextFieldAutoSize;
   import Piece;
   import caurina.transitions.Tweener;
 
@@ -18,10 +19,13 @@ package {
     private static const GRID_ROW:uint = 10;//yoko
     private static const GRID_COLMN:uint = 10;//tate
     private static const GRID_MARGIN:uint = 4;
+    private static const BASE_BONUS:uint = 2000;
     private var pieces:Array;//map of pieces[x][y]
     private var pieceContainer:Sprite;
     private var removablePieces:Array = [];
     private var isBusy:Boolean = false;
+    private var score:uint = 0;
+    private var progressScore:uint = 0;
 
     /**
      *  constructor
@@ -36,9 +40,46 @@ package {
      */
     private function initialize(event:Event = null):void {
       removeEventListener(Event.ADDED_TO_STAGE, initialize);
+      score = 0;
+      initScoreAsset();
       resetPieces();
       createPieceContainer();
       render();
+    }
+
+    /**
+     *  update score view
+     */
+    private function updateScore():void {
+      var scoreObject:Object = {};
+      scoreObject.score = scoreAsset.score.text;
+      Tweener.addTween(scoreObject, {score: score, time: 0.5, transition: "easeInExpo", 
+        onUpdate: function():void {
+          scoreAsset.score.text = Math.floor(scoreObject.score);
+        },
+        onComplete: function():void {
+          scoreAsset.score.text = score;
+        }
+      });
+    }
+
+    /**
+     *  initialize score asset
+     */
+    private function initScoreAsset():void {
+      scoreAsset.score.autoSize = TextFieldAutoSize.CENTER;
+      //scoreAsset.addEventListener(Event.ENTER_FRAME, scoreAssetEnterFrameHandler);
+    }
+
+    /**
+     *  score asset enter frame handler
+     *  @param event event
+     */
+    private function scoreAssetEnterFrameHandler(event:Event):void {
+      //if (progressScore < score) {
+      //  progressScore++;
+      //  scoreAsset.score.text = progressScore;
+      //}
     }
 
     /**
@@ -48,6 +89,8 @@ package {
       var containerWidth:uint = GRID_ROW * Piece.WIDTH + GRID_MARGIN;
       var containerHeight:uint = GRID_COLMN * Piece.HEIGHT + GRID_MARGIN;
       pieceContainer = new Sprite();
+      pieceContainer.y = 85;
+      pieceContainer.x = 5;
       pieceContainer.graphics.beginFill(0x000000);
       pieceContainer.graphics.drawRect(0, 0, containerWidth, containerHeight);
       addChild(pieceContainer);
@@ -131,7 +174,7 @@ package {
      *  shift to blank column
      */
     private function shiftPieces():void {
-      trace("shift");
+      //trace("shift");
       var i:int;
       var j:int;
       var piece:Piece;
@@ -199,6 +242,9 @@ package {
             piece.disable();
           }
           updatePieces();
+          score += calculateScore(removablePieces.length);
+          updateScore();
+          //scoreAsset.score.text = score;
         }
       }
     }
@@ -220,6 +266,12 @@ package {
      *  @param event event
      */
     private function pieceMouseOverHandler(event:MouseEvent):void {
+      for (var i:uint = 0; i < GRID_ROW; i++) {
+        for (var j:uint = 0; j < GRID_COLMN; j++) {
+          pieces[i][j].normalize();
+        }
+      }
+
       hilightRemovablePieces(event.currentTarget.point);
     }
 
@@ -230,6 +282,7 @@ package {
     private function hilightRemovablePieces(point:Point):void {
       createRemovablePieces(point);
       if (isExistsRemovablePieces()) {
+        //trace(calculateScore(removablePieces.length));
         for each (var piece in removablePieces) {
           piece.activate();
         }
@@ -288,12 +341,15 @@ package {
           createRemovablePieces(new Point(i, j));
           if (isExistsRemovablePieces()) {
             removablePieces = [];
-            trace("ok");
+            //trace("ok");
             return;
           }
         }
       }
-      trace("ng", removablePieces.length);
+      //trace("ng", removablePieces.length);
+      //game over
+      trace(calculateBonusScore());
+      showGameOver();
     }
 
     /**
@@ -320,6 +376,52 @@ package {
         }
       }
     }
-  }
 
+    /**
+     *  calculate piece score
+     *  @param pieceNum number of pieces
+     *  @return score
+     */
+    private function calculateScore(pieceNum:uint):uint {
+      return (5 * pieceNum * pieceNum);
+    }
+
+    /**
+     *  calculate bonus score
+     *  @return bonus score
+     */
+    private function calculateBonusScore():uint {
+      var bonus:int = BASE_BONUS;
+      var leftPieceCount:uint = 0;
+      for (var i:uint = 0; i < GRID_ROW; i++) {
+        for (var j:uint = 0; j < GRID_COLMN; j++) {
+          var piece:Piece = pieces[i][j];
+          if (piece.color > -1) {
+            leftPieceCount++;
+          }
+        }
+      }
+      bonus = bonus - (leftPieceCount * leftPieceCount * 10);
+      return Math.max(bonus, 0);
+    }
+
+    /**
+     *  show game over window
+     */
+    private function showGameOver():void {
+    }
+
+    /**
+     *  show ranking window
+     */
+    private function showRanking():void {
+    }
+
+    /**
+     *  close all windows
+     */
+    private function closeWindows():void {
+    }
+
+  }
 }
