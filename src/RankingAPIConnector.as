@@ -1,4 +1,4 @@
-﻿package {
+package {
 
   import flash.events.Event;
   import flash.events.EventDispatcher;
@@ -44,15 +44,15 @@
       request.data = variable;
 
       urlLoader.dataFormat = URLLoaderDataFormat.TEXT;
-      urlLoader.addEventListener(Event.COMPLETE, urlLoaderCompleteHandler);
+      urlLoader.addEventListener(Event.COMPLETE, urlLoaderSendCompleteHandler);
       urlLoader.load(request);
     }
 
     /**
-     *  url loader complete handler
+     *  url loader send score complete handler
      *  @param event event
      */
-    private function urlLoaderCompleteHandler(event:Event):void {
+    private function urlLoaderSendCompleteHandler(event:Event):void {
       dispatchEvent(new RankingAPIConnectorEvent(RankingAPIConnectorEvent.SEND_COMPLETE));
     }
 
@@ -60,6 +60,26 @@
      *  get ranking
      */
     public function getRanking():void {
+      var urlLoader:URLLoader = new URLLoader();
+      var request:URLRequest = new URLRequest(RANKING_API_URL);
+      var variable:URLVariables = new URLVariables();
+      variable.gameName = GAME_NAME;
+      request.method = URLRequestMethod.POST;
+      request.data = variable;
+
+      urlLoader.dataFormat = URLLoaderDataFormat.TEXT;
+      urlLoader.addEventListener(Event.COMPLETE, urlLoaderGetRankingCompleteHandler);
+      urlLoader.load(request);
+    }
+
+    /**
+     *  url loader get ranking complete handler
+     *  @param event event
+     */
+    private function urlLoaderGetRankingCompleteHandler(event:Event):void {
+      var connectorEvent:RankingAPIConnectorEvent = new RankingAPIConnectorEvent(RankingAPIConnectorEvent.GET_RANKING_COMPLETE); 
+      connectorEvent.result = XML(event.currentTarget.data);
+      dispatchEvent(connectorEvent);
     }
 
   }

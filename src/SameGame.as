@@ -44,7 +44,8 @@ package {
       removeEventListener(Event.ADDED_TO_STAGE, initialize);
 
       rankingAPIConnector = new RankingAPIConnector();
-      rankingAPIConnector.addEventListener(RankingAPIConnectorEvent.SEND_COMPLETE, sendRankingCompleteHandler);
+      rankingAPIConnector.addEventListener(RankingAPIConnectorEvent.SEND_COMPLETE, sendScoreCompleteHandler);
+      rankingAPIConnector.addEventListener(RankingAPIConnectorEvent.GET_RANKING_COMPLETE, getRankingCompleteHandler);
 
       createPieceContainer();
       reset();
@@ -54,9 +55,25 @@ package {
      *  send ranking complete handler
      *  @parame event event
      */
-    private function sendRankingCompleteHandler(event:RankingAPIConnectorEvent):void {
+    private function sendScoreCompleteHandler(event:RankingAPIConnectorEvent):void {
       reset();
       showRanking();
+    }
+
+    /**
+     *  get ranking complete handler
+     *  @parame event event
+     */
+    private function getRankingCompleteHandler(event:RankingAPIConnectorEvent):void {
+      //trace(event.result);
+      var count:uint = 0;
+      for each(var item:XML in event.result.items.item) {
+        var userName:String = item.name;
+        var score:uint = item.score;
+        rankingAsset["ranking" + count].userName.text = count + ". " + userName;
+        rankingAsset["ranking" + count].score.text = score + " pt";
+        count++;
+      }
     }
 
     /**
@@ -64,7 +81,6 @@ package {
      *  @param event event
      */
     private function reset(event:MouseEvent = null):void {
-      trace("reset");
       closeWindows();
       score = 0;
       initScoreAsset();
@@ -543,6 +559,7 @@ package {
      */
     private function showRanking(event:MouseEvent = null):void {
       rankingAsset.visible = true;
+      rankingAPIConnector.getRanking();
     }
 
     /**
