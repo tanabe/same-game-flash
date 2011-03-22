@@ -20,8 +20,8 @@ package {
     private static const GRID_MARGIN:uint = 4;
     private var pieces:Array;//map of pieces[x][y]
     private var pieceContainer:Sprite;
-
     private var removablePieces:Array = [];
+    private var isBusy:Boolean = false;
 
     /**
      *  constructor
@@ -74,13 +74,21 @@ package {
     }
 
     /**
-     *  remap
+     *  move pieces
      */
     private function updatePieces():void {
+      isBusy = true;
+      //drop and shift
+      dropPieces();
+    }
+
+    /**
+     *  drop pieces
+     */
+    private function dropPieces():void {
       var i:int;
       var j:int;
 
-      //drop
       for (i = 0; i < GRID_ROW; i++) {
         var colorPieces:Array = [];
         var blankPieces:Array = [];
@@ -98,9 +106,38 @@ package {
         }
       }
 
-      //shift left
+      //update point
+      var count:uint = 0;
+      for (i = 0; i < GRID_ROW; i++) {
+        for (j = 0; j < GRID_COLMN; j++) {
+          var piece:Piece = pieces[i][j];
+          var nextY:uint = Piece.HEIGHT * j + GRID_MARGIN;
+          //animation
+          Tweener.addTween(piece, {y: nextY, time: 0.3, onComplete: function():void {
+            count++;
+            //complete
+            if (count >= GRID_ROW * GRID_COLMN) {
+              //render and shift to left
+              render();
+              shiftPieces();
+            }
+          }});
+          pieces[i][j].point = new Point(i, j);
+        }
+      }
+    }
+
+    /**
+     *  shift to blank column
+     */
+    private function shiftPieces():void {
+      trace("shift");
+      var i:int;
+      var j:int;
+      var piece:Piece;
       var blankRows:Array = [];
       var notBlankRows:Array = [];
+
       for (i = 0; i < GRID_ROW; i++) {
         if (pieces[i][GRID_COLMN - 1].color === -1) {
           blankRows.push(pieces[i]);
@@ -108,15 +145,44 @@ package {
           notBlankRows.push(pieces[i]);
         }
       }
-      var rows:Array = notBlankRows.concat(blankRows);
-      for (i = 0; i < GRID_ROW; i++) {
-        pieces[i] = rows[i];
-      }
 
-      for (i = 0; i < GRID_ROW; i++) {
-        for (j = 0; j < GRID_COLMN; j++) {
-          pieces[i][j].point = new Point(i, j);
+      //exists blank rows
+      if (blankRows.length > 0) {
+        var rows:Array = notBlankRows.concat(blankRows);
+        for (i = 0; i < GRID_ROW; i++) {
+          pieces[i] = rows[i];
         }
+
+        //update point
+        var count:uint = 0;
+        for (i = 0; i < GRID_ROW; i++) {
+          for (j = 0; j < GRID_COLMN; j++) {
+            piece = pieces[i][j];
+            var nextX:uint = Piece.WIDTH * i + GRID_MARGIN;
+            //animation
+            Tweener.addTween(piece, {x: nextX, time: 0.3, onComplete: function():void {
+              count++;
+              //complete
+              if (count >= GRID_ROW * GRID_COLMN) {
+                isBusy = false;
+                render();
+                checkRemovablePiecesExists();
+              }
+            }});
+            piece.point = new Point(i, j);
+          }
+        }
+      //not exists blank rows
+      } else {
+        isBusy = false;
+        for (i = 0; i < GRID_ROW; i++) {
+          for (j = 0; j < GRID_COLMN; j++) {
+            piece = pieces[i][j];
+            piece.point = new Point(i, j);
+          }
+        }
+        render();
+        checkRemovablePiecesExists();
       }
 
     }
@@ -126,12 +192,14 @@ package {
      *  @param event event
      */
     private function pieceClickHandler(event:MouseEvent):void {
-      if (removablePieces.length > 1) {
-        for each (var piece in removablePieces) {
-          piece.disable();
+      if (!isBusy) {
+        createRemovablePieces(event.currentTarget.point);
+        if (isExistsRemovablePieces()) {
+          for each (var piece in removablePieces) {
+            piece.disable();
+          }
+          updatePieces();
         }
-        updatePieces();
-        render();
       }
     }
 
@@ -160,6 +228,19 @@ package {
      *  @param point target
      */
     private function hilightRemovablePieces(point:Point):void {
+      createRemovablePieces(point);
+      if (isExistsRemovablePieces()) {
+        for each (var piece in removablePieces) {
+          piece.activate();
+        }
+      }
+    }
+
+    /**
+     *  create removable pieces list
+     *  @param point target
+     */
+    private function createRemovablePieces(point:Point):void {
       removablePieces = [];
 
       for (var i:uint = 0; i < GRID_ROW; i++) {
@@ -172,17 +253,12 @@ package {
       targetPiece.searched = true;
       removablePieces.push(targetPiece);
       searchRemovablePieces(point, targetPiece.color); 
-
-      if (removablePieces.length > 1) {
-        for each (var piece in removablePieces) {
-          piece.activate();
-        }
-      }
     }
 
     /**
      *  search removable piece
      *  @param point target
+     *  @param color color
      */
     private function searchRemovablePieces(point:Point, color:int):void {
       var right:Piece = (point.x < GRID_ROW - 1) ? pieces[point.x + 1][point.y] : null;
@@ -193,7 +269,7 @@ package {
       var targets:Array = [top, right, left, bottom];
       for each (var piece:Piece in targets) {
         //searchable
-        if (piece && !piece.searched) {
+        if (piece && !piece.searched && (piece.color > -1)) {
           if (piece.color === color) {
             removablePieces.push(piece);
             piece.searched = true;
@@ -201,6 +277,31 @@ package {
           }
         }
       }
+    }
+
+    /**
+     *  check removable pieces are exists
+     */
+    private function checkRemovablePiecesExists():void {
+      for (var i:uint = 0; i < GRID_ROW; i++) {
+        for (var j:uint = 0; j < GRID_COLMN; j++) {
+          createRemovablePieces(new Point(i, j));
+          if (isExistsRemovablePieces()) {
+            removablePieces = [];
+            trace("ok");
+            return;
+          }
+        }
+      }
+      trace("ng", removablePieces.length);
+    }
+
+    /**
+     *  exists removable pieces
+     *  @return exists then true
+     */
+    private function isExistsRemovablePieces():Boolean {
+      return (removablePieces.length > 1);
     }
 
     /**
@@ -214,7 +315,7 @@ package {
         for (var j:uint = 0; j < GRID_COLMN; j++) {
           var piece:Piece = pieces[i][j];
           piece.x = Piece.WIDTH * i + GRID_MARGIN;
-          piece.y = Piece.WIDTH * j + GRID_MARGIN;
+          piece.y = Piece.HEIGHT * j + GRID_MARGIN;
           pieceContainer.addChild(piece);
         }
       }

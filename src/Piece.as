@@ -95,23 +95,29 @@
      *  set active state
      */
     public function activate():void {
-      Tweener.addTween(rect, {width: 10, height: 10, time: 0.3});
-      //Tweener.addTween(rect, {width: MAX_WIDTH, height: MAX_HEIGHT, time: 0.3});
+      if (color > -1) {
+        Tweener.addTween(rect, {width: 10, height: 10, time: 0.3});
+      }
     }
 
     /**
      *  set normal state
      */
     public function normalize():void {
-      Tweener.addTween(rect, {width: MIN_WIDTH, height: MIN_HEIGHT, time: 0.3});
+      if (color > -1) {
+        Tweener.addTween(rect, {width: MIN_WIDTH, height: MIN_HEIGHT, time: 0.3});
+      }
     }
 
     /**
      *  disable this piece
      */
     public function disable():void {
-      color = -1;
       visible = false;
+      color = -1;
+      //Tweener.addTween(rect, {width: 0, height: 0, time: 0.3, onComplete: function():void {
+      //  visible = false;
+      //}});
     }
 
   }
