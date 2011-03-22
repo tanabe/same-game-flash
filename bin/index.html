@@ -11,9 +11,13 @@
     <script type="text/javascript" src="swfobject.js"></script>
     <script type="text/javascript" src="swffit.js"></script>
     <script type="text/javascript">
-      var params = { scale: "noscale", menu: "false", allowScriptAccess: "samedomain", allowFullScreen: "true"};
+      var vars = {
+        sendAPIURL: "./ranking.php?action=add",
+        rankingAPIURL: "./ranking.php?action=ranking"
+      };
+      var params = { scale: "noscale", menu: "false", allowScriptAccess: "always"};
       var attributes = { id:"flashContent", name:"flashContent" };
-      swfobject.embedSWF("same-game.swf", "flashContent", "214", "350", "10.0.0", null, null, params, attributes );
+      swfobject.embedSWF("same-game.swf", "flashContent", "214", "350", "10.0.0", null, vars, params, attributes );
       swffit.fit("flashContent", "100%", "100%");
     
     </script>

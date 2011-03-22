@@ -18,8 +18,9 @@ package {
 
     private static const GAME_NAME:String = "samegame";
     private static const SECRET:String = "hogehoge";
-    private static const SEND_API_URL:String = "http://localhost/ranking/ranking.php?action=add";
-    private static const RANKING_API_URL:String = "http://localhost/ranking/ranking.php?action=ranking";
+
+    public var SEND_API_URL:String = "";
+    public var RANKING_API_URL:String = "";
 
     /**
      *  constructor

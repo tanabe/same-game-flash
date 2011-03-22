@@ -5,6 +5,8 @@ package {
   import flash.display.MovieClip;
   import flash.display.Sprite;
   import flash.geom.Point;
+  import flash.net.URLRequest;
+  import flash.net.navigateToURL;
   import flash.text.TextFieldAutoSize;
   import caurina.transitions.Tweener;
   import Piece;
@@ -28,6 +30,7 @@ package {
     private var score:uint = 0;
     private var progressScore:uint = 0;
     private var rankingAPIConnector:RankingAPIConnector;
+    private var isGameOver:Boolean = false;
 
     /**
      *  constructor
@@ -44,11 +47,25 @@ package {
       removeEventListener(Event.ADDED_TO_STAGE, initialize);
 
       rankingAPIConnector = new RankingAPIConnector();
+      rankingAPIConnector.SEND_API_URL = stage.loaderInfo.parameters["sendAPIURL"];
+      rankingAPIConnector.RANKING_API_URL = stage.loaderInfo.parameters["rankingAPIURL"];
       rankingAPIConnector.addEventListener(RankingAPIConnectorEvent.SEND_COMPLETE, sendScoreCompleteHandler);
       rankingAPIConnector.addEventListener(RankingAPIConnectorEvent.GET_RANKING_COMPLETE, getRankingCompleteHandler);
 
       createPieceContainer();
       reset();
+
+      //copyright
+      copyright.buttonMode = true;
+      copyright.addEventListener(MouseEvent.CLICK, copyrightClickHandler);
+    }
+
+    /**
+     *  copyright click handler
+     *  @param event event
+     */
+    private function copyrightClickHandler(event:MouseEvent):void {
+      navigateToURL(new URLRequest("http://twitter.com/tanabe/"), "_blank");
     }
 
     /**
@@ -56,7 +73,7 @@ package {
      *  @parame event event
      */
     private function sendScoreCompleteHandler(event:RankingAPIConnectorEvent):void {
-      reset();
+      //reset();
       showRanking();
     }
 
@@ -81,6 +98,7 @@ package {
      *  @param event event
      */
     private function reset(event:MouseEvent = null):void {
+      isGameOver = false;
       closeWindows();
       score = 0;
       initScoreAsset();
@@ -146,6 +164,9 @@ package {
      *  @param event event
      */
     private function rankingCloseButtonClickHandler(event:MouseEvent):void {
+      if (isGameOver) {
+        reset();
+      }
       closeWindows();
     }
 
@@ -153,15 +174,30 @@ package {
      *  initialize game over asset
      */
     private function initGameOverAsset():void {
+      gameOverAsset.visible = false;
+      //gameOverAsset.visible = true;//debug
       gameOverAsset.mouseEnabled = true;
       gameOverAsset.mouseChildren = true;
-      gameOverAsset.visible = false;
       gameOverAsset.score.autoSize = TextFieldAutoSize.CENTER;
       gameOverAsset.userName.restrict = "a-zA-Z0-9";
       gameOverAsset.sendButton.buttonMode = true;
       gameOverAsset.sendButton.addEventListener(MouseEvent.CLICK, sendButtonClickHandler);
       gameOverAsset.sendButton.addEventListener(MouseEvent.MOUSE_OVER, buttonMouseOverHandler);
       gameOverAsset.sendButton.addEventListener(MouseEvent.MOUSE_OUT, buttonMouseOutHandler);
+
+      gameOverAsset.userName.addEventListener(MouseEvent.CLICK, userNameClickHandler);
+    }
+
+    /**
+     *  user name click handler
+     *  @param event event
+     */
+    private function userNameClickHandler(event:MouseEvent):void {
+      event.currentTarget.setSelection(0, event.currentTarget.text.length);
+      //cant work
+      //if (event.currentTarget.text === "noname") {
+      //  event.currentTarget.text = "";
+      //}
     }
 
     /**
@@ -531,12 +567,15 @@ package {
      *  show game over window
      */
     private function showGameOver():void {
+      isGameOver = true;
+
       var bonus:uint = calculateBonusScore();
       gameOverAsset.visible = true;
       gameOverAsset.score.text = bonus;
 
       var scoreObject:Object = {};
       scoreObject.score = gameOverAsset.score.text;
+      //has bonus
       if (bonus > 0) {
         Tweener.addTween(scoreObject, {score: 0, time: 0.5, transition: "easeInExpo", delay: 1, 
           onUpdate: function():void {
@@ -548,6 +587,7 @@ package {
             //TODO
           }
         });
+      //no bonus
       } else {
         //TODO
       }
@@ -567,6 +607,7 @@ package {
      */
     private function closeWindows():void {
       gameOverAsset.visible = false;
+      //gameOverAsset.visible = true;//debug
       rankingAsset.visible = false;
     }
 
