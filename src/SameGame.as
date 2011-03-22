@@ -6,8 +6,10 @@ package {
   import flash.display.Sprite;
   import flash.geom.Point;
   import flash.text.TextFieldAutoSize;
-  import Piece;
   import caurina.transitions.Tweener;
+  import Piece;
+  import RankingAPIConnector;
+  import RankingAPIConnectorEvent;
 
   /**
    *  same-game
@@ -25,6 +27,7 @@ package {
     private var isBusy:Boolean = false;
     private var score:uint = 0;
     private var progressScore:uint = 0;
+    private var rankingAPIConnector:RankingAPIConnector;
 
     /**
      *  constructor
@@ -39,8 +42,21 @@ package {
      */
     private function initialize(event:Event = null):void {
       removeEventListener(Event.ADDED_TO_STAGE, initialize);
+
+      rankingAPIConnector = new RankingAPIConnector();
+      rankingAPIConnector.addEventListener(RankingAPIConnectorEvent.SEND_COMPLETE, sendRankingCompleteHandler);
+
       createPieceContainer();
       reset();
+    }
+
+    /**
+     *  send ranking complete handler
+     *  @parame event event
+     */
+    private function sendRankingCompleteHandler(event:RankingAPIConnectorEvent):void {
+      reset();
+      showRanking();
     }
 
     /**
@@ -121,6 +137,8 @@ package {
      *  initialize game over asset
      */
     private function initGameOverAsset():void {
+      gameOverAsset.mouseEnabled = true;
+      gameOverAsset.mouseChildren = true;
       gameOverAsset.visible = false;
       gameOverAsset.score.autoSize = TextFieldAutoSize.CENTER;
       gameOverAsset.userName.restrict = "a-zA-Z0-9";
@@ -160,6 +178,9 @@ package {
      *  send score
      */
     private function sendScore():void {
+      gameOverAsset.mouseEnabled = false;
+      gameOverAsset.mouseChildren = false;
+      rankingAPIConnector.sendScore(gameOverAsset.userName.text, score);
     }
 
     /**
