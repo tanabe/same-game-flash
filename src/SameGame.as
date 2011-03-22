@@ -12,7 +12,6 @@ package {
   /**
    *  same-game
    *  @author Hideaki Tanabe
-   *  This code is under the MIT license
    */
   public class SameGame extends MovieClip {
 
@@ -40,11 +39,39 @@ package {
      */
     private function initialize(event:Event = null):void {
       removeEventListener(Event.ADDED_TO_STAGE, initialize);
+      createPieceContainer();
+      reset();
+    }
+
+    /**
+     *  reset reset
+     *  @param event event
+     */
+    private function reset(event:MouseEvent = null):void {
+      trace("reset");
+      closeWindows();
       score = 0;
       initScoreAsset();
+      initGameOverAsset();
+      initRankingAsset();
+      initButtons();
       resetPieces();
-      createPieceContainer();
       render();
+    }
+
+    /**
+     *  initialize buttons
+     */
+    private function initButtons():void {
+      resetButton.buttonMode = true;
+      rankingButton.buttonMode = true;
+      resetButton.addEventListener(MouseEvent.CLICK, reset);
+      resetButton.addEventListener(MouseEvent.MOUSE_OVER, buttonMouseOverHandler);
+      resetButton.addEventListener(MouseEvent.MOUSE_OUT, buttonMouseOutHandler);
+
+      rankingButton.addEventListener(MouseEvent.CLICK, showRanking);
+      rankingButton.addEventListener(MouseEvent.MOUSE_OVER, buttonMouseOverHandler);
+      rankingButton.addEventListener(MouseEvent.MOUSE_OUT, buttonMouseOutHandler);
     }
 
     /**
@@ -67,19 +94,72 @@ package {
      *  initialize score asset
      */
     private function initScoreAsset():void {
+      scoreAsset.score.text = score;
       scoreAsset.score.autoSize = TextFieldAutoSize.CENTER;
-      //scoreAsset.addEventListener(Event.ENTER_FRAME, scoreAssetEnterFrameHandler);
     }
 
     /**
-     *  score asset enter frame handler
+     *  initialize ranking asset
+     */
+    private function initRankingAsset():void {
+      rankingAsset.visible = false;
+      rankingAsset.closeButton.buttonMode = true;
+      rankingAsset.closeButton.addEventListener(MouseEvent.CLICK, rankingCloseButtonClickHandler);
+      rankingAsset.closeButton.addEventListener(MouseEvent.MOUSE_OVER, buttonMouseOverHandler);
+      rankingAsset.closeButton.addEventListener(MouseEvent.MOUSE_OUT, buttonMouseOutHandler);
+    }
+
+    /**
+     *  ranking close button click handler
      *  @param event event
      */
-    private function scoreAssetEnterFrameHandler(event:Event):void {
-      //if (progressScore < score) {
-      //  progressScore++;
-      //  scoreAsset.score.text = progressScore;
-      //}
+    private function rankingCloseButtonClickHandler(event:MouseEvent):void {
+      closeWindows();
+    }
+
+    /**
+     *  initialize game over asset
+     */
+    private function initGameOverAsset():void {
+      gameOverAsset.visible = false;
+      gameOverAsset.score.autoSize = TextFieldAutoSize.CENTER;
+      gameOverAsset.userName.restrict = "a-zA-Z0-9";
+      gameOverAsset.sendButton.buttonMode = true;
+      gameOverAsset.sendButton.addEventListener(MouseEvent.CLICK, sendButtonClickHandler);
+      gameOverAsset.sendButton.addEventListener(MouseEvent.MOUSE_OVER, buttonMouseOverHandler);
+      gameOverAsset.sendButton.addEventListener(MouseEvent.MOUSE_OUT, buttonMouseOutHandler);
+    }
+
+    /**
+     *  button mouse over event handler
+     *  @param event event
+     */
+    private function buttonMouseOverHandler(event:MouseEvent):void {
+      event.currentTarget.gotoAndStop("over");
+    }
+
+    /**
+     *  button mouse out event handler
+     *  @param event event
+     */
+    private function buttonMouseOutHandler(event:MouseEvent):void {
+      event.currentTarget.gotoAndStop("default");
+    }
+
+    /**
+     *  send button click event handler
+     *  @param event event
+     */
+    private function sendButtonClickHandler(event:MouseEvent):void {
+      if (gameOverAsset.userName.text.length > 0) {
+        sendScore();
+      }
+    }
+
+    /**
+     *  send score
+     */
+    private function sendScore():void {
     }
 
     /**
@@ -93,7 +173,7 @@ package {
       pieceContainer.x = 5;
       pieceContainer.graphics.beginFill(0x000000);
       pieceContainer.graphics.drawRect(0, 0, containerWidth, containerHeight);
-      addChild(pieceContainer);
+      addChildAt(pieceContainer, 0);
     }
 
     /**
@@ -104,7 +184,6 @@ package {
       for (var i:uint = 0; i < GRID_ROW; i++) {
         pieces[i] = [];
         for (var j:uint = 0; j < GRID_COLMN; j++) {
-          //var color:int = ((Math.random() * (Piece.COLORS.length + 1)) >> 0) - 1;//for debug
           var color:int = (Math.random() * (Piece.COLORS.length)) >> 0;
           var piece:Piece = new Piece(color);
           piece.addEventListener(MouseEvent.MOUSE_OVER, pieceMouseOverHandler);
@@ -348,8 +427,14 @@ package {
       }
       //trace("ng", removablePieces.length);
       //game over
-      trace(calculateBonusScore());
+      //trace(calculateBonusScore());
       showGameOver();
+    }
+
+    /**
+     *  add bonus
+     */
+    private function addBonus():void {
     }
 
     /**
@@ -409,18 +494,42 @@ package {
      *  show game over window
      */
     private function showGameOver():void {
+      var bonus:uint = calculateBonusScore();
+      gameOverAsset.visible = true;
+      gameOverAsset.score.text = bonus;
+
+      var scoreObject:Object = {};
+      scoreObject.score = gameOverAsset.score.text;
+      if (bonus > 0) {
+        Tweener.addTween(scoreObject, {score: 0, time: 0.5, transition: "easeInExpo", delay: 1, 
+          onUpdate: function():void {
+            gameOverAsset.score.text = Math.floor(scoreObject.score);
+          }, onComplete: function():void {
+            score += bonus;
+            updateScore();
+            //complete
+            //TODO
+          }
+        });
+      } else {
+        //TODO
+      }
     }
 
     /**
      *  show ranking window
+     *  @param event event
      */
-    private function showRanking():void {
+    private function showRanking(event:MouseEvent = null):void {
+      rankingAsset.visible = true;
     }
 
     /**
      *  close all windows
      */
     private function closeWindows():void {
+      gameOverAsset.visible = false;
+      rankingAsset.visible = false;
     }
 
   }
